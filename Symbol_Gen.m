@@ -14,7 +14,8 @@ close all
 
 %% General Paramters
 PARAMS.VISUALIZE = 1;          % Set to 1 to show received constellations
-PARAMS.NORMALIZE_RESULTS = 1;  % Normalize results to power = 1
+PARAMS.NORMALIZE_RESULTS = 2;  % Set to 1 to Normalize total received power = 1
+                               % Set to 2 to Normalize each blocks total power = 1
 
 %% Simulation Parameters
 Len_block = 50;    % Number of symbols per block
@@ -102,9 +103,13 @@ end
 P_i_actual = mean(abs(I_rx).^2,'all')/p_int;
 P_x_actual = mean(abs(X).^2,'all');
 
-if(PARAMS.NORMALIZE_RESULTS)
+if(PARAMS.NORMALIZE_RESULTS == 1)
     % Normalize so that mean(abs(Y).^2,'all') = 1
     Y = Y./sqrt(mean(abs(Y).^2,'all'));
+elseif(PARAMS.NORMALIZE_RESULTS == 2)
+    for block = 1:Num_blocks
+        Y(:,block) = Y(:,block)./sqrt(mean(abs(Y(:,block)).^2));
+    end
 end
 
 
@@ -127,7 +132,7 @@ if PARAMS.VISUALIZE
     for i=1:min(5,Num_blocks)
         figure()
         scatter(real(Y(:,i)),imag(Y(:,i)))
-        if(PARAMS.NORMALIZE_RESULTS)
+        if(PARAMS.NORMALIZE_RESULTS > 0)
             xlim([-1.5,1.5]);
             ylim([-1.5,1.5]);
         end
