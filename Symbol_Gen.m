@@ -4,13 +4,17 @@
 % Description: Generate a dataset of noisy IQ samples for a given
 % modulation scheme and interference constellation.
 %
+% NOTES:
+%   - L_ indicates Label (for ML analysis)
+%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 clear all
 close all
 
 
 %% General Paramters
-VISUALIZE = 1;      % Set to 1 to show received constellations
+PARAMS.VISUALIZE = 1;          % Set to 1 to show received constellations
+PARAMS.NORMALIZE_RESULTS = 1;  % Normalize results to power = 1
 
 %% Simulation Parameters
 Len_block = 50;    % Number of symbols per block
@@ -18,7 +22,7 @@ Num_blocks = 100;     % Number of blocks observed in dataset
 p_int = 0.75;        % Probability of interference being present in a block
 
 %SNR = 100*ones(1,Num_blocks);   % Constant for all blocks
-SNR_MIN = 50; SNR_MAX = 150;
+SNR_MIN = 20; SNR_MAX = 100;
 SNR = (SNR_MAX-SNR_MIN)*rand(1,Num_blocks) + SNR_MIN;
 
 SIR = 10;                       % Signal to Interference Ratio
@@ -48,13 +52,13 @@ Constellation_16 = Constellation_16./sqrt(mean(abs(Constellation_16).^2));
 
 
 %% Allocate Array
-L_S_x = zeros(Len_block,Num_blocks);
-L_S_i = zeros(Len_block,Num_blocks);
-X   = zeros(Len_block,Num_blocks);
-Y   = zeros(Len_block,Num_blocks);
-I   = zeros(Len_block,Num_blocks);
-I_rx   = zeros(Len_block,Num_blocks);
-N   = zeros(Len_block,Num_blocks);
+L_S_x   = zeros(Len_block,Num_blocks);
+L_S_i   = zeros(Len_block,Num_blocks);
+X       = zeros(Len_block,Num_blocks);
+Y       = zeros(Len_block,Num_blocks);
+I       = zeros(Len_block,Num_blocks);
+I_rx    = zeros(Len_block,Num_blocks);
+N       = zeros(Len_block,Num_blocks);
 
 %% Generate signal and interference Symbols
 % Block Settings (Contellation & presence of interference constant per block)
@@ -98,6 +102,10 @@ end
 P_i_actual = mean(abs(I_rx).^2,'all')/p_int;
 P_x_actual = mean(abs(X).^2,'all');
 
+if(PARAMS.NORMALIZE_RESULTS)
+    % Normalize so that mean(abs(Y).^2,'all') = 1
+    Y = Y./sqrt(mean(abs(Y).^2,'all'));
+end
 
 
 
@@ -115,10 +123,14 @@ SER_16 = 1 - sum(S_hat_16(:,C_hat_16==L_Constellations) == L_S_x(:,C_hat_16==L_C
        
 
 %% Visualize
-if VISUALIZE
+if PARAMS.VISUALIZE
     for i=1:min(5,Num_blocks)
         figure()
         scatter(real(Y(:,i)),imag(Y(:,i)))
+        if(PARAMS.NORMALIZE_RESULTS)
+            xlim([-1.5,1.5]);
+            ylim([-1.5,1.5]);
+        end
     end
     
     % Plot ideal constellations
